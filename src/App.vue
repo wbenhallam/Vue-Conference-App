@@ -6,7 +6,7 @@
       :clipped="$vuetify.breakpoint.mdAndUp"
       v-model="sidenav"  app>
       <v-list>
-        <v-list-tile v-for="item in menuItems" :key="item.title" router :to="item.link">
+        <v-list-tile v-for="item in menuItems" :key="item.title" :to="item.link">
           <v-list-tile-action>
             <v-icon>{{item.icon}}</v-icon>
           </v-list-tile-action>
@@ -26,7 +26,7 @@
       </v-toolbar-title>
       <v-spacer></v-spacer>
       <v-toolbar-items class="hidden-xs-only">
-        <v-btn flat v-for="item in menuItems" :key="item.title" router :to="item.link">
+        <v-btn flat v-for="item in menuItems" :key="item.title" :to="item.link">
           <v-icon left>{{item.icon}}</v-icon>
           {{item.title}}
         </v-btn>
@@ -44,13 +44,27 @@ export default {
   data () {
     return {
       sidenav: false,
-      menuItems: [
-        {icon: 'work', title: 'View Conferences', link: '/conferences'},
-        {icon: 'add_circle', title: 'Add Conference', link: '/conferences/add'},
-        {icon: 'person', title: 'Profile', link: '/profile'},
+    }
+  },
+  computed: {
+    menuItems(){
+      let menuItems = [
         {icon: 'face', title: 'Sign up', link: '/signup'},
         {icon: 'lock_open', title: 'Sign in', link: '/signin'},
       ]
+
+      if(this.userIsAuthenticated){
+        menuItems = [
+          {icon: 'work', title: 'View Conferences', link: '/conferences/list'},
+          {icon: 'add_circle', title: 'Add Conference', link: '/conferences/add'},
+          {icon: 'person', title: 'Profile', link: '/profile'},
+        ]
+      }
+      return menuItems
+    },
+    userIsAuthenticated(){
+      const user = this.$store.getters.user
+      return user !== null && user !== undefined
     }
   }
 }

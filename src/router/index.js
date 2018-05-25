@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import Home from '@/components/Home'
 import Conferences from '@/components/Conference/Conferences'
 import AddConference from '@/components/Conference/AddConference'
+import ViewConference from '@/components/Conference/ViewConference'
 import Profile from '@/components/User/Profile'
 import Signup from '@/components/User/Signup'
 import Signin from '@/components/User/Signin'
@@ -18,7 +19,7 @@ export default new Router({
       component: Home
     },
     {
-      path: '/conferences',
+      path: '/conferences/list',
       name: 'Conferences',
       component: Conferences
     },
@@ -27,6 +28,14 @@ export default new Router({
       name: 'AddConference',
       component: AddConference
     },
+
+    {
+      path: '/conferences/:id',
+      name: 'Conference',
+      props: true,
+      component: ViewConference
+    },
+
     {
       path: '/profile',
       name: 'Profile',

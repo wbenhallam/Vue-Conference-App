@@ -1,11 +1,11 @@
 import Vue from 'vue'
 import App from './App'
+import * as firebase from 'firebase'
 import router from './router'
 import Vuetify from 'vuetify'
 import 'vuetify/dist/vuetify.min.css'
 import colors from 'vuetify/es5/util/colors'
-
-
+import {store} from './store'
 
 Vue.use(Vuetify, {
   theme: {
@@ -22,5 +22,15 @@ Vue.config.productionTip = false
 new Vue({
   el: '#app',
   router,
-  render: h => h(App)
+  store,
+  render: h => h(App),
+  created () {
+    firebase.initializeApp({
+      apiKey: 'AIzaSyCWLEML_NoV-VMgLsT4X8D1-MrpICwc-sI',
+      authDomain: 'testproject-201720.firebaseapp.com',
+      databaseURL: 'https://testproject-201720.firebaseio.com',
+      projectId: 'testproject-201720',
+      storageBucket: 'testproject-201720.appspot.com',
+    })
+  }
 })
