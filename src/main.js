@@ -7,8 +7,12 @@ import AlertCmp from './components/Shared/AlertCmp'
 import 'vuetify/dist/vuetify.min.css'
 import colors from 'vuetify/es5/util/colors'
 import {store} from './store'
+import EditConferenceDialog from './components/Conference/Edit/EditConferenceDetailsDialog'
+import RegisterDialog from './components/Conference/Registration/RegisterDialog'
 
 Vue.component('AlertCmp', AlertCmp)
+Vue.component('EditConferenceDialog', EditConferenceDialog)
+Vue.component('RegisterDialog', RegisterDialog)
 
 Vue.use(Vuetify, {
   theme: {
@@ -38,9 +42,10 @@ new Vue({
 
     firebase.auth().onAuthStateChanged(user => {
       console.log(user)
-      if(user){}{
-        console.log(user)
+      if(user !== null && user!== undefined){
+
         this.$store.dispatch('autoSignin', user)
+        this.$store.dispatch('fetchUserData')
       }
     })
 

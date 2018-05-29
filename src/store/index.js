@@ -7,20 +7,44 @@ Vue.use(Vuex)
 export const store = new Vuex.Store({
 
   state: {
-    loadedConferences: [
-      {imageUrl: 'https://www.omm.com/~/media/images/site/locations/beijing_780x520px.ashx', id: '1', title: 'SPE conference in Beijing', date: '2018-07-25', location: 'Beijing, China'},
-      {imageUrl: 'https://img.huffingtonpost.com/asset/5a396b641600002800c50e5f.jpg?ops=scalefit_720_noupscale', id: '2', title: 'AAPG conference in SLC', date: '2018-07-15', location: 'Salt Lake City, Utah. USA'}
-    ],
+    loadedConferences: [],
     user: null,
     loading: false,
     error: null
   },
   mutations: {
+    registerUserForConferenceMut(state, payload){
+      const targetConfId = payload.id
+      if(state.user.registeredConferences.findIndex(confId => confId === targetConfId) >= 0){
+        return
+      }
+      state.user.registeredConferences.push(targetConfId)
+      state.user.registrationKeys[targetConfId] = payload.registrationKey
+    },
+    unregisterUserFromConferenceMut(state, payload){
+      const registeredConferences = state.user.registeredConferences
+      registeredConferences.splice(registeredConferences.findIndex(confId => confId === payload), 1)
+      Reflect.deleteProperty(state.user.registrationKeys, payload)
+    },
     setLoadedConferences(state, payload){
       state.loadedConferences = payload
     },
     addConference (state, payload) {
       state.loadedConferences.push(payload)
+    },
+    updateConference(state, payload){
+      const conference = state.loadedConferences.find(conference => {
+        return conference.id === payload.id
+      })
+      if(payload.title){
+        conference.title = payload.title
+      }
+      if(payload.description){
+        conference.description = payload.description
+      }
+      if(payload.date){
+        conference.date = payload.date
+      }
     },
     setUser(state, payload){
       state.user = payload
@@ -33,6 +57,36 @@ export const store = new Vuex.Store({
     }
   },
   actions: {
+    registerUserForConference({commit, getters}, payload){
+      commit('setLoading', true)
+      firebase.database().ref('/users/' + getters.user.id).child('/registration/')
+        .push(payload)
+        .then(data => {
+          commit('setLoading', false)
+          commit('registerUserForConferenceMut', {id: payload, registrationKey: data.key})
+        })
+        .catch(error => {
+          console.log(error)
+          commit('setLoading', false)
+        })
+    },
+    unregisterUserFromConference({commit, getters}, payload){
+      commit('setLoading', true)
+      if(!getters.user.registrationKeys)
+        return
+      const registrationKey = getters.user.registrationKeys[payload]
+      console.log(getters.user)
+      firebase.database().ref('/users/' + getters.user.id).child('/registration/' + registrationKey)
+        .remove()
+        .then(data => {
+          commit('setLoading', false)
+          commit('unregisterUserFromConferenceMut', payload)
+        })
+        .catch(error => {
+          console.log(error)
+          commit('setLoading', false)
+        })
+    },
     loadConferences({commit, getters}){
       commit('setLoading', true)
       firebase.database().ref('conferences').once('value')
@@ -48,7 +102,7 @@ export const store = new Vuex.Store({
               imageUrl: confObj[confId].imageUrl,
               description: confObj[confId].description,
               date: confObj[confId].date,
-              organiserId: getters.user.id
+              organiserId: confObj[confId].organiserId
             })
             commit('setLoading', false)
             commit('setLoadedConferences', conferences)
@@ -65,25 +119,70 @@ export const store = new Vuex.Store({
       const conf = {
         title: payload.title,
         location: payload.location,
-        imageUrl: payload.imageUrl,
         description: payload.description,
         date: payload.date,
         organiserId: getters.user.id
       }
 
       // Reach out to firebase and store it
+      let imageUrl
+      let key
       firebase.database().ref('conferences').push(conf)
         .then(data => {
+          key = data.key
+          return key
+          // console.log(data)
+        })
+        .then(key => {
+          console.log('--> Conference was added')
+          const filename = payload.image.name
+          const ext = filename.slice(filename.lastIndexOf('.'))
+          return firebase.storage().ref('conferences/' + key + '.' + ext).put(payload.image)
+        })
+        .then(fileData => {
+          console.log('--> Image was stored')
+          return fileData.ref.getDownloadURL()
+        })
+        .then((downloadUrl) => {
+          console.log('--> Download Url was generated')
+          return firebase.database().ref('conferences').child(key).update({imageUrl: downloadUrl})
+        })
+        .then(() => {
+          console.log('--> Image URL was added to conference')
           commit('addConference', {
             ...conf,
-            id: data.key
+            imageUrl: imageUrl,
+            id: key
           })
-          console.log(data)
         })
         .catch(error => {
           console.log(error)
         })
 
+    },
+    updateConferenceData({commit}, payload){
+      commit('setLoading', true)
+      const updateObj = {}
+      if(payload.title){
+        updateObj.title = payload.title
+      }
+      if(payload.description){
+        updateObj.description = payload.description
+      }
+      if(payload.date){
+        updateObj.date = payload.date
+      }
+
+      // call firebase to update record
+      firebase.database().ref('conferences').child(payload.id).update(updateObj)
+        .then(data => {
+          commit('setLoading', false)
+          commit('updateConference', payload)
+        })
+        .catch(error => {
+          console.log(error)
+          commit('setLoading', false)
+        })
     },
     signupUser({commit}, payload) {
       // clear error and start loading
@@ -95,7 +194,8 @@ export const store = new Vuex.Store({
             commit('setLoading', false)
             const newUser = {
               id: user.uid,
-              registeredConferences: []
+              registeredConferences: [],
+              registrationKeys: {}
             }
             commit('setUser', newUser)
           }
@@ -117,20 +217,46 @@ export const store = new Vuex.Store({
             commit('setLoading', false)
             const existingUser = {
               id: user.uid,
-              registeredConferences: []
+              registeredConferences: [],
+              registrationKeys: {}
             }
             commit('setUser', existingUser)
           }
         ).catch(
           error => {
-            commit('setLoading', true)
+            commit('setLoading', false)
             commit('setError', error)
             console.log(error)
           }
       )
     },
     autoSignin({commit}, payload){
-      commit('setUser', {id: payload.uid, registeredConferences: []})
+      commit('setUser', {id: payload.uid, registeredConferences: [], registrationKeys: {}})
+    },
+    fetchUserData({commit, getters}){
+      commit('setLoading', true)
+      firebase.database().ref('/users/' + getters.user.id + '/registration/').once('value')
+        .then(data => {
+          commit('setLoading', false)
+          const dataPairs = data.val()
+          let conferenceIds = []
+          let registrationKeys = {}
+          for (let key in dataPairs){
+            conferenceIds.push(dataPairs[key])
+            registrationKeys[dataPairs[key]] = key
+          }
+          const updatedUser = {
+            id: getters.user.id,
+            registeredConferences: conferenceIds,
+            registrationKeys: registrationKeys
+          }
+          console.log(updatedUser)
+          commit('setUser', updatedUser)
+        })
+        .catch(error => {
+          console.log(error)
+          commit('setLoading', false)
+        })
     },
     logout({commit}){
       firebase.auth().signOut()
