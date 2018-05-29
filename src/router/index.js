@@ -7,6 +7,7 @@ import ViewConference from '@/components/Conference/ViewConference'
 import Profile from '@/components/User/Profile'
 import Signup from '@/components/User/Signup'
 import Signin from '@/components/User/Signin'
+import AuthGuard from './AuthGuard'
 
 
 Vue.use(Router)
@@ -26,7 +27,8 @@ export default new Router({
     {
       path: '/conferences/add',
       name: 'AddConference',
-      component: AddConference
+      component: AddConference,
+      beforeEnter: AuthGuard
     },
 
     {
@@ -39,7 +41,8 @@ export default new Router({
     {
       path: '/profile',
       name: 'Profile',
-      component: Profile
+      component: Profile,
+      beforeEnter: AuthGuard
     },
     {
       path: '/signup',

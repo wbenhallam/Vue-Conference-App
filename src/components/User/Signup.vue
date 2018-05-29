@@ -1,5 +1,10 @@
 <template>
 <v-container>
+  <v-layout row v-if="error">
+    <v-flex xs12 sm6 offset-sm3>
+      <AlertCmp @alertDismissed="clearError" :alertMsg="error.message"></AlertCmp>
+    </v-flex>
+  </v-layout>
   <v-layout row>
     <v-flex xs12 sm6 offset-sm3>
       <v-card>
@@ -71,6 +76,9 @@
       },
       user () {
         return this.$store.getters.user
+      },
+      error(){
+        return this.$store.getters.error
       }
     },
     watch: {
@@ -88,6 +96,9 @@
         }
         this.$store.dispatch('signupUser', newUser)
 
+      },
+      clearError(){
+        this.$store.dispatch('clearError')
       }
     }
   }

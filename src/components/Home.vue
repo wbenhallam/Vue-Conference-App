@@ -10,9 +10,19 @@
       </v-flex>
     </v-layout>
 
+    <v-layout row wrap v-if="loading">
+      <v-flex xs10 offset-xs1 class="text-xs-center">
+        <v-progress-circular
+          :size="100"
+          indeterminate
+          color="amber"
+        ></v-progress-circular>
+      </v-flex>
+    </v-layout>
+
     <v-layout row wrap>
       <v-flex xs10 offset-xs1>
-          <v-carousel style="cursor: pointer">
+          <v-carousel style="cursor: pointer" v-if="!loading">
             <v-carousel-item v-for="item in conferences" :src="item.imageUrl"
                              :key="item.id" v-on:click.native="onLoadConference(item.id)">
               <div class="title">
@@ -39,6 +49,9 @@ export default {
     conferences () {
       return this.$store.getters.featuredConferences
     },
+    loading () {
+      return this.$store.getters.loading
+    }
 
   },
   methods: {

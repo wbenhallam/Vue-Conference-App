@@ -3,9 +3,12 @@ import App from './App'
 import * as firebase from 'firebase'
 import router from './router'
 import Vuetify from 'vuetify'
+import AlertCmp from './components/Shared/AlertCmp'
 import 'vuetify/dist/vuetify.min.css'
 import colors from 'vuetify/es5/util/colors'
 import {store} from './store'
+
+Vue.component('AlertCmp', AlertCmp)
 
 Vue.use(Vuetify, {
   theme: {
@@ -32,5 +35,16 @@ new Vue({
       projectId: 'testproject-201720',
       storageBucket: 'testproject-201720.appspot.com',
     })
+
+    firebase.auth().onAuthStateChanged(user => {
+      console.log(user)
+      if(user){}{
+        console.log(user)
+        this.$store.dispatch('autoSignin', user)
+      }
+    })
+
+    // Initialize loaded conference in store
+    this.$store.dispatch('loadConferences')
   }
 })
